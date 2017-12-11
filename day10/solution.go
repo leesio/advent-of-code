@@ -51,26 +51,16 @@ func getDenseHash(hash []int) []int {
 func hashList(lengths, list []int, rounds int) []int {
 	position := 0
 	skipSize := 0
+	listLength := len(list)
 
 	for r := 0; r < rounds; r++ {
 		for _, length := range lengths {
-			swapList := make([]int, length)
-			subList := make([]int, length)
 
-			for s := range subList {
-				subList[s] = list[(position+s)%len(list)]
-				swapList[s] = list[(position+s)%len(list)]
+			for x, y := position, position+length-1; x < y; x, y = x+1, y-1 {
+				list[x%listLength], list[y%listLength] = list[y%listLength], list[x%listLength]
 			}
 
-			for s := range subList {
-				subList[s] = swapList[len(subList)-s-1]
-			}
-
-			for l := 0; l < length; l++ {
-				list[position] = subList[l]
-				position = (position + 1) % len(list)
-			}
-			position = (position + skipSize) % len(list)
+			position = (position + length + skipSize) % len(list)
 			skipSize++
 		}
 	}
