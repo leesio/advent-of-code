@@ -5,11 +5,7 @@ defmodule DayOne do
 
   def calculate_total_weight(x) do
     w = calculate_weight(x)
-    if w > 0 do
-      w + calculate_total_weight(w)
-    else
-      0
-    end
+    if w > 0, do: w + calculate_total_weight(w), else: 0
   end
 
 
