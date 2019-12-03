@@ -25,32 +25,45 @@ defmodule DayThree do
     end
   end
 
-  def plot_path(instructions, points_touched, path) do
-    [instruction | tail] = instructions
-    {direction, distance} = String.split_at(instruction, 1)
-    distance = String.to_integer(distance)
-    initial_count = length(path)
-    get_next_ptr = case direction do
+  def plot_sub_path(initial_count, next_ptr, distance, points_touched, path) do
+    Enum.reduce(
+      0..distance - 1,
+      {points_touched, path},
+      fn (n, {points_touched, path}) ->
+        [last_ptr | _] = path
+        next_ptr = next_ptr.(last_ptr)
+        points_touched = case Map.get(points_touched, key(next_ptr))  do
+          nil -> Map.put(points_touched, key(next_ptr), initial_count + n)
+          _-> points_touched
+        end
+          {points_touched, [next_ptr | path]}
+      end)
+  end
+
+  def get_next_ptr_fn(direction) do
+    case direction do
       "R" -> fn {x_ptr, y_ptr} -> {x_ptr + 1, y_ptr} end
       "L" -> fn {x_ptr, y_ptr} -> {x_ptr - 1, y_ptr} end
       "U" -> fn {x_ptr, y_ptr} -> {x_ptr, y_ptr + 1} end
       "D" -> fn {x_ptr, y_ptr} -> {x_ptr, y_ptr - 1} end
       _ -> throw("unrecognised direction")
     end
+  end
 
-    {points_touched, path} = Enum.reduce(
-      0..distance - 1,
-      {points_touched, path},
-      fn (n, acc) ->
-        {points_touched, path} = acc
-        [ptr | _] = path
-        next_ptr = get_next_ptr.(ptr)
-        points_touched = case Map.get(points_touched, key(next_ptr))  do
-          nil -> Map.put(points_touched, key(next_ptr), initial_count + n)
-          _-> points_touched
-        end
-        {points_touched, [next_ptr | path]}
-    end)
+  def plot_path(instructions, points_touched, path) do
+    [instruction | tail] = instructions
+    {direction, distance} = String.split_at(instruction, 1)
+    distance = String.to_integer(distance)
+    next_ptr_fn = get_next_ptr_fn(direction)
+
+    initial_count = length(path)
+    {points_touched, path} = plot_sub_path(
+      initial_count,
+      next_ptr_fn,
+      distance,
+      points_touched,
+      path
+    )
 
     case length(tail) do
       0 -> {points_touched, path}
@@ -59,13 +72,7 @@ defmodule DayThree do
     end
 
   def get_intersections(path, points) do
-    Enum.filter(path, fn ptr ->
-      if Map.get(points, key(ptr)) === nil || ptr == {0,0} do
-        false
-      else
-        true
-      end
-    end) |>
+    Enum.filter(path, fn p -> Map.get(points, key(p)) !== nil && p != {0,0} end) |>
     Enum.sort() |>
     Enum.dedup()
   end
