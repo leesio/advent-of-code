@@ -32,19 +32,14 @@ var (
 			// hgt (Height) - a number followed by either cm or in:
 			// If cm, the number must be at least 150 and at most 193.
 			// If in, the number must be at least 59 and at most 76.
-			hgt := value
-			if strings.HasSuffix(hgt, "cm") {
-				if h := strings.TrimSuffix(hgt, "cm"); !isNumBetween(h, 150, 193) {
-					return false
-				}
-			} else if strings.HasSuffix(hgt, "in") {
-				if h := strings.TrimSuffix(hgt, "in"); !isNumBetween(h, 59, 76) {
-					return false
-				}
-			} else {
+			switch {
+			case strings.HasSuffix(value, "cm"):
+				return isNumBetween(strings.TrimSuffix(value, "cm"), 150, 193)
+			case strings.HasSuffix(value, "in"):
+				return isNumBetween(strings.TrimSuffix(value, "in"), 59, 76)
+			default:
 				return false
 			}
-			return true
 		},
 		"hcl": func(value string) bool {
 			// hcl (Hair Color) - a # followed by exactly six characters 0-9 or a-f.
@@ -52,10 +47,7 @@ var (
 		},
 		"ecl": func(value string) bool {
 			// ecl (Eye Color) - exactly one of: amb blu brn gry grn hzl oth.
-			if _, ok := validEyeColours[value]; !ok {
-				return false
-			}
-			return true
+			return validEyeColours[value]
 		},
 		"pid": func(value string) bool {
 			// pid (Passport ID) - a nine-digit number, including leading zeroes.
