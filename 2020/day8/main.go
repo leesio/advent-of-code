@@ -4,8 +4,15 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/leesio/advent-of-code/2020/util"
+)
+
+const (
+	JMP Operation = "jmp"
+	ACC Operation = "acc"
+	NOP Operation = "nop"
 )
 
 func main() {
@@ -23,6 +30,7 @@ func main() {
 	} else {
 		panic(fmt.Errorf("didn't find first loop"))
 	}
+	a := time.Now()
 	fixedInstructions, err := FixBrokenInstruction(instructions)
 	if err != nil {
 		panic(err)
@@ -31,16 +39,14 @@ func main() {
 	if err != nil {
 		panic(fmt.Errorf("fixed instructions failed to execute: %s", err))
 	}
-	fmt.Printf("part 2: %d\n", acc)
+	fmt.Printf("part 2 (1): %d (%v)\n", acc, time.Now().Sub(a))
+
+	a = time.Now()
+	e := NewExecutionContext(instructions)
+	fmt.Printf("part 2 (2): %d (%v)\n", e.FindBrokenInstruction(), time.Now().Sub(a))
 }
 
 type Operation string
-
-const (
-	JMP Operation = "jmp"
-	ACC Operation = "acc"
-	NOP Operation = "nop"
-)
 
 func (o Operation) Valid() bool {
 	switch o {
@@ -54,8 +60,17 @@ func (o Operation) Valid() bool {
 }
 
 type Instruction struct {
+	ID        string
 	operation Operation
 	argument  int
+}
+
+func (i *Instruction) Clone() *Instruction {
+	return &Instruction{
+		ID:        i.ID,
+		operation: i.operation,
+		argument:  i.argument,
+	}
 }
 
 type Instructions []*Instruction
@@ -63,10 +78,7 @@ type Instructions []*Instruction
 func (in Instructions) Clone() Instructions {
 	clone := make(Instructions, len(in))
 	for i, instruction := range in {
-		clone[i] = &Instruction{
-			operation: instruction.operation,
-			argument:  instruction.argument,
-		}
+		clone[i] = instruction.Clone()
 	}
 	return clone
 }
@@ -89,6 +101,7 @@ func ExtractInstructions(input []string) (Instructions, error) {
 		instructions[i] = &Instruction{
 			operation: operation,
 			argument:  argument,
+			ID:        strconv.Itoa(i),
 		}
 	}
 	return instructions, nil
@@ -118,14 +131,14 @@ func FixBrokenInstruction(instructions Instructions) (Instructions, error) {
 }
 
 func Execute(instructions Instructions) (int, error) {
-	seenInstructions := make(map[*Instruction]bool)
+	seenInstructions := make(map[string]bool)
 	acc := 0
 	for cursor := 0; cursor < len(instructions); {
 		inst := instructions[cursor]
-		if seenInstructions[inst] {
+		if seenInstructions[inst.ID] {
 			return acc, fmt.Errorf("started infinite loop at instruction: %d", cursor)
 		}
-		seenInstructions[inst] = true
+		seenInstructions[inst.ID] = true
 		switch inst.operation {
 		case JMP:
 			cursor = cursor + inst.argument
