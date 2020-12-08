@@ -5,6 +5,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"regexp"
 	"strconv"
 )
 
@@ -34,4 +35,27 @@ func Atoi(ss []string) ([]int, error) {
 		vals[i] = val
 	}
 	return vals, nil
+}
+
+func ExtractNamedMatches(r *regexp.Regexp, s string) map[string]string {
+	names := r.SubexpNames()[1:]
+	matches := r.FindStringSubmatch(s)
+	m := make(map[string]string)
+	for i, match := range matches[1:] {
+		m[names[i]] = match
+	}
+	return m
+}
+func ExtractNamedSubmatches(r *regexp.Regexp, s string) []map[string]string {
+	names := r.SubexpNames()[1:]
+	matches := r.FindAllStringSubmatch(s, -1)
+	ms := make([]map[string]string, len(matches))
+	for i, match := range matches {
+		m := make(map[string]string)
+		for j, submatch := range match[1:] {
+			m[names[j]] = submatch
+		}
+		ms[i] = m
+	}
+	return ms
 }
