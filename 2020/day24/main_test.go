@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -28,21 +27,31 @@ var testInput = []string{
 	"wseweeenwnesenwwwswnew",
 }
 
-func TestNav(t *testing.T) {
-	store := NewTileStore()
-	reference := store.Get(0, 0)
-
-	x := reference.FollowSequence(store, []string{"nw", "w", "sw", "e", "e"})
-	fmt.Println(x)
-}
 func TestPartOne(t *testing.T) {
 	if res := PartOne(testInput); res != 10 {
 		t.Errorf("Got %d for part one, expected %d", res, 10)
 	}
 
 }
+
 func TestPartTwo(t *testing.T) {
 	if res := PartTwo(testInput); res != 2208 {
-		t.Errorf("Got %d for part one, expected %d", res, 2208)
+		t.Errorf("Got %d for part two, expected %d", res, 2208)
+	}
+}
+
+func BenchmarkPartTwo(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		if res := PartTwo(testInput); res != 2208 {
+			b.Errorf("Got %d for part two, expected %d", res, 2208)
+		}
+	}
+}
+
+func BenchmarkPartOne(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		if res := PartOne(testInput); res != 10 {
+			b.Errorf("Got %d for part one, expected %d", res, 10)
+		}
 	}
 }

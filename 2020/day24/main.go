@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"math"
 	"strings"
 
 	"github.com/leesio/advent-of-code/2020/util"
@@ -15,6 +14,13 @@ const (
 	nw = "nw"
 	w  = "w"
 	e  = "e"
+)
+
+type Colour int
+
+const (
+	white Colour = iota
+	black
 )
 
 var directions = []string{e, w, se, sw, ne, nw}
@@ -30,28 +36,20 @@ func main() {
 
 func PartOne(input []string) int {
 	sequences := ParseInput(input)
-	store := NewTileStore()
-	reference := store.Get(0, 0)
-	for _, sequence := range sequences {
-		final := reference.FollowSequence(store, sequence)
-		final.SwitchColour()
-	}
-	return store.CountBlack()
+	floor := NewFloor()
+	floor.FlipTiles(sequences)
+	return len(floor.BlackTiles())
 }
 
 func PartTwo(input []string) int {
 	sequences := ParseInput(input)
-	store := NewTileStore()
-	reference := store.Get(0, 0)
-	for _, sequence := range sequences {
-		final := reference.FollowSequence(store, sequence)
-		final.SwitchColour()
-	}
+	floor := NewFloor()
+	floor.FlipTiles(sequences)
 
 	for i := 0; i < 100; i++ {
-		store.ElapseDay()
+		floor.ElapseDay()
 	}
-	return store.CountBlack()
+	return len(floor.BlackTiles())
 }
 
 func ParseInput(input []string) [][]string {
@@ -73,127 +71,141 @@ func ParseInput(input []string) [][]string {
 	return sequences
 }
 
-type TileStore struct {
-	store map[string]*Tile
-}
-
-func NewTileStore() *TileStore {
-	return &TileStore{
-		store: make(map[string]*Tile),
-	}
-}
-
-func (ts *TileStore) key(x, y int) string {
-	return fmt.Sprintf("%d:%d", x, y)
-}
-func (ts *TileStore) CountBlack() int {
-	count := 0
-	for _, tile := range ts.store {
-		if tile.colour == "black" {
-			count++
-		}
-	}
-	return count
-}
-
-func (ts *TileStore) Get(x, y int) *Tile {
-	key := ts.key(x, y)
-	if tile, ok := ts.store[key]; ok {
-		return tile
-	}
-	tile := &Tile{
-		x:      x,
-		y:      y,
-		colour: "white",
-	}
-	ts.store[key] = tile
-	return tile
-}
-
 type Tile struct {
 	x      int
 	y      int
-	colour string
+	colour Colour
 }
 
-func (t *Tile) FollowSequence(store *TileStore, sequence []string) *Tile {
-	current := t
-	for _, dir := range sequence {
-		current = current.GetNeighbour(store, dir)
-	}
-	return current
+type Tiles struct {
+	underlying map[string]*Tile
 }
 
-func (t *Tile) GetNeighbour(store *TileStore, dir string) *Tile {
-	y := t.y
-	if strings.HasPrefix(dir, "s") {
-		y = t.y + 1
-	} else if strings.HasPrefix(dir, "n") {
-		y = t.y - 1
+func NewTiles() *Tiles {
+	return &Tiles{underlying: make(map[string]*Tile)}
+}
+
+func (t *Tiles) key(x, y int) string {
+	return fmt.Sprintf("%d:%d", x, y)
+}
+
+func (t *Tiles) Get(x, y int) Colour {
+	key := t.key(x, y)
+	if tile, ok := t.underlying[key]; ok {
+		return tile.colour
 	}
-	var x int
+	return white
+}
+
+func (t *Tiles) BlackTiles() map[string]*Tile {
+	return t.underlying
+}
+
+func (t *Tiles) Flip(x, y int) {
+	key := t.key(x, y)
+	if _, ok := t.underlying[key]; ok {
+		delete(t.underlying, key)
+	} else {
+		t.underlying[key] = &Tile{x: x, y: y, colour: black}
+	}
+}
+
+func NewTile(x, y int) *Tile {
+	return &Tile{x: x, y: y, colour: white}
+}
+
+type Floor struct {
+	tiles *Tiles
+}
+
+func NewFloor() *Floor {
+	return &Floor{tiles: NewTiles()}
+}
+
+func getRelativeTileCoords(x, y int, dir string) (int, int) {
 	if dir == e {
-		x = t.x + 1
-	} else if dir == w {
-		x = t.x - 1
-	} else if strings.HasSuffix(dir, "e") {
-		if abs(t.y%2) == 1 {
-			x = t.x + 1
-		} else {
-			x = t.x
-		}
-	} else if strings.HasSuffix(dir, "w") {
-		if abs(t.y%2) == 1 {
-			x = t.x
-		} else {
-			x = t.x - 1
-		}
+		return x + 1, y
 	}
-	return store.Get(x, y)
+	if dir == w {
+		return x - 1, y
+	}
+	if strings.HasSuffix(dir, "w") {
+		x--
+	}
+	if abs(y%2) == 1 {
+		x++
+	}
+	if strings.HasPrefix(dir, "s") {
+		y++
+	} else if strings.HasPrefix(dir, "n") {
+		y--
+	}
+	return x, y
 }
 
-func (ts *TileStore) ElapseDay() {
-	toSwitch := make([]*Tile, 0)
-	for _, tile := range ts.store {
-		if tile.colour == "black" {
-			tile.BlackNeighbours(ts)
+func (f *Floor) FlipTile(sequence []string) {
+	x, y := 0, 0
+	for _, dir := range sequence {
+		x, y = getRelativeTileCoords(x, y, dir)
+	}
+	f.tiles.Flip(x, y)
+}
+
+func (f *Floor) FlipTiles(sequences [][]string) {
+	for _, sequence := range sequences {
+		f.FlipTile(sequence)
+	}
+}
+
+func (f *Floor) BlackTiles() map[string]*Tile {
+	return f.tiles.BlackTiles()
+}
+
+type Neighbour struct {
+	*Tile
+	blackNeighbours int
+}
+
+func (f *Floor) ElapseDay() {
+	allTiles := make(map[string]*Neighbour)
+	blackTiles := f.BlackTiles()
+	for _, tile := range blackTiles {
+		if _, ok := allTiles[key(tile.x, tile.y)]; !ok {
+			allTiles[key(tile.x, tile.y)] = &Neighbour{Tile: tile}
+		}
+		for _, dir := range directions {
+			x, y := getRelativeTileCoords(tile.x, tile.y, dir)
+			neighbour, ok := allTiles[key(x, y)]
+			if !ok {
+				neighbourTile, ok := blackTiles[key(x, y)]
+				if !ok {
+					neighbourTile = NewTile(x, y)
+				}
+				neighbour = &Neighbour{Tile: neighbourTile}
+				allTiles[f.tiles.key(x, y)] = neighbour
+			}
+			neighbour.blackNeighbours++
 		}
 	}
-	for _, tile := range ts.store {
-		n := tile.BlackNeighbours(ts)
-		if tile.colour == "black" {
-			if n > 2 || n == 0 {
-				toSwitch = append(toSwitch, tile)
-			}
-		} else {
-			if n == 2 {
-				toSwitch = append(toSwitch, tile)
-			}
+	toSwitch := make([]*Tile, 0)
+	for _, neighbour := range allTiles {
+
+		if (neighbour.colour == black && neighbour.blackNeighbours > 2 || neighbour.blackNeighbours == 0) ||
+			neighbour.colour == white && neighbour.blackNeighbours == 2 {
+			toSwitch = append(toSwitch, neighbour.Tile)
 		}
 	}
 	for _, tile := range toSwitch {
-		tile.SwitchColour()
+		f.tiles.Flip(tile.x, tile.y)
 	}
-}
-func (t *Tile) BlackNeighbours(store *TileStore) int {
-	count := 0
-	for _, dir := range directions {
-		neighbour := t.GetNeighbour(store, dir)
-		if neighbour.colour == "black" {
-			count++
-		}
-	}
-	return count
 }
 
+func key(x, y int) string {
+	return fmt.Sprintf("%d:%d", x, y)
+}
 func abs(n int) int {
-	return int(math.Abs(float64(n)))
-}
-
-func (t *Tile) SwitchColour() {
-	if t.colour == "black" {
-		t.colour = "white"
-	} else {
-		t.colour = "black"
+	if n >= 0 {
+		return n
 	}
+	return 0 - n
 }
