@@ -1,17 +1,18 @@
+// https://adventofcode.com/2020/day/23
+
 package main
 
 import (
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/leesio/advent-of-code/2020/util"
 )
 
 func main() {
 	fmt.Printf("part 1: %s\n", PartOne("487912365"))
-	fmt.Printf("part 2: %s\n", PartTwo("487912365"))
+	fmt.Printf("part 2: %d\n", PartTwo("487912365"))
 }
 
 func PartOne(input string) string {
@@ -19,7 +20,6 @@ func PartOne(input string) string {
 	for i := 0; i < 100; i++ {
 		ring.Move()
 	}
-	fmt.Println(ring)
 	idx := findIndex(ring.underlying, 1)
 	offset := idx + 1
 	output := make([]string, 0)
@@ -29,20 +29,18 @@ func PartOne(input string) string {
 	return strings.Join(output, "")
 }
 
-func PartTwo(input string) string {
+func PartTwo(input string) int {
 	ring := NewRing(input)
 	ring.Pad()
-	a := time.Now()
+	first := NewLinkedCups(ring)
+	c := first
 	for i := 0; i < 10_000_000; i++ {
-		ring.Move()
-		if i > 0 && i%1000 == 0 {
-			fmt.Println(i, time.Now().Sub(a))
-			a = time.Now()
-		}
+		c = c.Move()
 	}
-	idx := findIndex(ring.underlying, 1)
-	fmt.Println(ring.underlying[idx+1], ring.underlying[idx+2])
-	return ""
+	one := c.index[1]
+	a := one.NextCup
+	b := a.NextCup
+	return a.Value * b.Value
 }
 
 type Ring struct {
@@ -63,25 +61,15 @@ func findIndex(sl []int, val int) int {
 	}
 	return -1
 }
+
 func (r *Ring) updateCursor() {
 	cursor := findIndex(r.underlying, r.cursorVal)
 	r.cursor = (cursor + 1) % len(r.underlying)
 	r.cursorVal = r.underlying[r.cursor]
 }
 
-func (r *Ring) String() string {
-	s := make([]string, len(r.underlying))
-	for i, v := range r.underlying {
-		if v == r.cursorVal {
-			s[i] = fmt.Sprintf("(%s)", strconv.Itoa(v))
-		} else {
-			s[i] = fmt.Sprintf(" %s ", strconv.Itoa(v))
-		}
-	}
-	return strings.Join(s, "")
-}
 func (r *Ring) Pad() {
-	pad := make([]int, 999999-len(r.underlying))
+	pad := make([]int, 1_000_000-len(r.underlying))
 	for i := range pad {
 		pad[i] = i + r.max + 1
 	}
@@ -151,4 +139,100 @@ func NewRing(input string) *Ring {
 		min:        min,
 		max:        max,
 	}
+}
+
+type CupIndex map[int]*Cup
+
+type Cup struct {
+	Value   int
+	NextCup *Cup
+
+	index  CupIndex
+	picked CupIndex
+	max    int
+	min    int
+}
+
+// NewLinkedCups creates a linked list of Cups.  Duplicating the slice each move
+// makes the naive implementation too slow for part 2
+func NewLinkedCups(ring *Ring) *Cup {
+	index := make(map[int]*Cup)
+	first := &Cup{
+		Value: ring.underlying[0],
+		index: index,
+	}
+	index[first.Value] = first
+	prev := first
+	max, min := prev.Value, prev.Value
+	for i := 1; i < len(ring.underlying); i++ {
+		current := &Cup{
+			Value: ring.underlying[i],
+			index: index,
+		}
+		if current.Value > max {
+			max = current.Value
+		}
+		if current.Value < min {
+			min = current.Value
+		}
+		index[current.Value] = current
+		prev.NextCup = current
+		prev = current
+	}
+	for _, cup := range index {
+		cup.min = min
+		cup.max = max
+	}
+	last := index[ring.underlying[len(ring.underlying)-1]]
+	last.NextCup = first
+	return first
+}
+
+func (c *Cup) String() string {
+	return strconv.Itoa(c.Value)
+}
+
+func (c *Cup) Move() *Cup {
+	disconnectedCups := make(map[int]bool)
+	head, tail := c.Pick()
+	c.NextCup = tail.NextCup
+	tail.NextCup = nil
+	cur := head
+	for {
+		disconnectedCups[cur.Value] = true
+		if cur.NextCup == nil {
+			break
+		}
+		cur = cur.NextCup
+	}
+	dst := c.Value - 1
+	var dstCup *Cup
+	var ok bool
+	for {
+		if dst == 0 {
+			dst = c.max
+		}
+		if !disconnectedCups[dst] {
+			dstCup, ok = c.index[dst]
+			if !ok {
+				fmt.Println("looking for", dst, "in", c.index)
+			}
+			break
+		}
+		dst--
+	}
+	link := dstCup.NextCup
+	dstCup.NextCup = head
+	tail.NextCup = link
+	return c.NextCup
+}
+
+func (c *Cup) Pick() (*Cup, *Cup) {
+	current := c
+	head := c.NextCup
+	for i := 0; i < 3; i++ {
+		next := current.NextCup
+		current = next
+	}
+	return head, current
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -11,6 +12,11 @@ func TestPartOne(t *testing.T) {
 	if res := PartOne(testInput); res != exp {
 		t.Errorf("Got %s, exp: %s", res, exp)
 	}
+}
+
+func TestPartTwo(t *testing.T) {
+	res := PartTwo(testInput)
+	fmt.Println(res)
 }
 
 func BenchmarkMoving(b *testing.B) {
