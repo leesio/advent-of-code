@@ -43,13 +43,6 @@ func PartTwo(input []string) int {
 	return sum
 }
 
-func MustAtoi(s string) int {
-	val, err := strconv.Atoi(s)
-	if err != nil {
-		panic(err)
-	}
-	return val
-}
 func evaluatePair(a int, operator string, b int) int {
 	if operator == add {
 		return a + b
@@ -72,10 +65,10 @@ func collectParens(s string, evaluateFn func(string) int) string {
 func Evaluate(s string) int {
 	s = collectParens(s, Evaluate)
 	parts := strings.Split(s, " ")
-	res := MustAtoi(parts[0])
+	res := util.MustAtoi(parts[0])
 	for i := 1; i < len(parts); i += 2 {
 		operator := parts[i]
-		b := MustAtoi(parts[i+1])
+		b := util.MustAtoi(parts[i+1])
 		res = evaluatePair(res, operator, b)
 	}
 	return res
@@ -88,7 +81,7 @@ func EvaluateAdvanced(s string) int {
 			parts := strings.Split(s, " ")
 			as, operator, bs := parts[0], parts[1], parts[2]
 			return strconv.Itoa(
-				evaluatePair(MustAtoi(as), operator, MustAtoi(bs)),
+				evaluatePair(util.MustAtoi(as), operator, util.MustAtoi(bs)),
 			)
 		})
 	}
