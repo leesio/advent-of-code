@@ -52,11 +52,11 @@ func TestBrokenInstruction(t *testing.T) {
 	}
 	instructions, err = FixBrokenInstruction(instructions)
 	if err != nil {
-		fmt.Errorf("got error looking for broken instruction: %s", err)
+		t.Errorf("got error looking for broken instruction: %s", err)
 	}
 	correctResult, err := Execute(instructions)
 	if err != nil {
-		fmt.Errorf("got error running fixed instruction: %s", err)
+		t.Errorf("got error running fixed instruction: %s", err)
 	}
 	if correctResult != 8 {
 		t.Errorf("Got right answer of %d, expected: %d", correctResult, 8)

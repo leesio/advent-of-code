@@ -22,6 +22,9 @@ func main() {
 	partOne := PartOne(input, stepSize)
 	fmt.Printf("part 1: %d\n", partOne)
 
+	partOneAlt := PartOneAlternative(input, stepSize)
+	fmt.Printf("part 1 alt: %d\n", partOneAlt)
+
 	partTwo := PartTwo(input, partOne)
 	fmt.Printf("part 2: %d\n", partTwo)
 

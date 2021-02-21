@@ -33,6 +33,12 @@ func TestPartOne(t *testing.T) {
 	}
 }
 
+func TestPartOneAlternative(t *testing.T) {
+	if res := PartOneAlternative(testInput, 5); res != 127 {
+		t.Errorf("Received: %d, expected: %d", res, 127)
+	}
+}
+
 func TestPartTwo(t *testing.T) {
 	target := 127
 	if res := PartTwo(testInput, target); res != 62 {

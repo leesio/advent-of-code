@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -24,10 +23,10 @@ func TestMask(t *testing.T) {
 	mask := NewMask("XXXXXXXXXXXXXXXXXXXXXXXXXXXXX1XXXX0X")
 
 	if res := mask.Apply(11); res != 73 {
-		fmt.Errorf("Got %d applying mask to %d, expected %d", res, 11, 73)
+		t.Errorf("Got %d applying mask to %d, expected %d", res, 11, 73)
 	}
 	if res := mask.Apply(101); res != 101 {
-		fmt.Errorf("Got %d applying mask to %d, expected %d", res, 101, 101)
+		t.Errorf("Got %d applying mask to %d, expected %d", res, 101, 101)
 	}
 
 	mask = NewMask("000000000000000000000000000000X1001X")

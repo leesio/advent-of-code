@@ -32,5 +32,4 @@ func getNthNumberSpoken(input []int, n int) int {
 		m[spoken] = append(m[spoken], cursor)
 		prev = spoken
 	}
-	return -1
 }

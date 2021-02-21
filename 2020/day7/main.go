@@ -2,10 +2,16 @@ package main
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/leesio/advent-of-code/2020/util"
+)
+
+var (
+	parentRegexp   = regexp.MustCompile("^(?P<adjective>\\w+) (?P<colour>\\w+) bags contain")
+	childrenRegexp = regexp.MustCompile("(?P<count>\\d+) (?P<adjective>\\w+) (?P<colour>\\w+) bags?")
 )
 
 func main() {
@@ -65,7 +71,7 @@ func (b *Bag) TotalChildren() int {
 	return total
 }
 
-func BuildTree(input []string) map[string]*Bag {
+func BuildTree(input []string) Tree {
 	tree := make(Tree)
 	for _, line := range input {
 		line = strings.Trim(line, ".")
@@ -93,15 +99,12 @@ func ID(adj, colour string) string {
 }
 
 func extractChildData(raw string) (string, string, int) {
-	parts := strings.Split(raw, " ")
-	if len(parts) != 4 {
-		panic(fmt.Errorf("Got a child with %d parts, expected: 4: %v", len(parts), parts))
-	}
-	count, err := strconv.Atoi(parts[0])
+	matches := util.ExtractNamedMatches(childrenRegexp, raw)
+	count, err := strconv.Atoi(matches["count"])
 	if err != nil {
 		panic(fmt.Errorf("error converting child count to int: %s", err))
 	}
-	return parts[1], parts[2], count
+	return matches["adjective"], matches["colour"], count
 }
 
 func extractParentData(parent string) (string, string) {

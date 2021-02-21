@@ -41,11 +41,7 @@ func main() {
 	fmt.Printf("part 2: %d\n", myID)
 }
 
-func BinarySearch(
-	input string,
-	upperMarker string,
-	lowerMarker string,
-) int {
+func BinarySearch(input string, upperMarker string, lowerMarker string) int {
 	maxIndex, val := len(input)-1, 0
 	for n, x := range input {
 		bit := 0
